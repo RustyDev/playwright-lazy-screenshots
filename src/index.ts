@@ -39,6 +39,8 @@ const optionDefinitions: OptionDefinition[] = [
 
 const args: Args = commandLineArgs(optionDefinitions);
 
+console.log(args);
+
 const width: number = args.width ?? 1400;
 const height: number = args.height ?? 800;
 const mobile: boolean = args.mobile ? true : false;
@@ -99,7 +101,9 @@ export async function takeScreenshot(
   delay: number,
   extension: AllowedExtensions,
 ) {
-  // await setViewportSize(page, viewport);
+  if (!mobile) {
+    await setViewportSize(page, viewport);
+  }
   await navigateToUrl(page, url);
   await pressEscapeKey(page);
   await scrollPage(page, viewport, delay, disableScrolling);
@@ -147,8 +151,10 @@ export async function saveScreenshot(
   fullPage: boolean,
   quality: number = null,
 ) {
-  const domain: string = new URL(url).hostname.replace(/[^a-zA-Z0-9]/g, '_');
-  const screenshotPath: string = path.join(dir, `${domain}.${extension}`);
+  const { hostname, pathname } = new URL(url);
+  const imageName = `${hostname}${pathname}`.replace(/[^a-zA-Z0-9]/g, '_');
+  const mobileFlag = mobile ? '_mobile' : '';
+  const screenshotPath: string = path.join(dir, `${imageName}${mobileFlag}.${extension}`);
 
   await page.screenshot({
     path: screenshotPath,
@@ -183,14 +189,17 @@ export async function saveScreenshot(
       }
 
       progressBar.update(i + 1, { url: currentUrl });
+
       await takeScreenshot(page, urlWithProtocol, output, disableScrolling, viewport, delay, extension);
 
       await page.close();
     }
     progressBar.stop();
+
     console.log(`Done! Saved ${totalScreenshots} screenshots to ${output}`);
   } catch (error) {
     console.error(error);
+
     process.exit(1);
   } finally {
     await browser.close();
