@@ -1,6 +1,6 @@
 # Playwright Bulk Screenshots w/ Lazy Loading
 
-This Node.js application captures screenshots of a list of URLs and saves them to a specified directory. It can take full-page screenshots or screenshots of a single viewport, and uses the `playwright` to automate the process.
+A bulk screenshot tool that automates the capture of one or multiple URLs and saves them to a specified directory. It can take full-page screenshots or screenshots of a single viewport, accounts for lazy loaded images and content.
 
 ## Installation
 
@@ -31,23 +31,23 @@ yarn start [options]
 
 where `[options]` are the command line options you can pass to the script:
 
-Options
+## Options
 
-```
---urls, u file List of urls: google.com,yahoo.com (overrides urls.txt)
---output, o directory Output directory (default: screenshots)
---single, s boolean Screenshot only the first viewport
---width, w number Viewport width in pixels (default: 1400)
---height, h number Viewport height in pixels (default: 800)
---delay, d number Delay between scroll events (default: 375)
---mobile, m boolean Mobile emulation mode
---browser, b boolean Run headed (opens Chromium while running)
---extension, e string File extension to use (default: png) - png, jpg, jpeg, webp
---quality, q number Quality of screenshot image: 1-100 (png is always 100).
---help string Print this usage guide.
-```
+| Command         | Description                                                 |
+| --------------- | ----------------------------------------------------------- |
+| --urls, -u      | List of urls: google.com yahoo.com (overrides urls.txt)     |
+| --output, -o    | Output directory (default: screenshots)                     |
+| --single, -s    | Screenshot only the first viewport                          |
+| --width, -w     | Viewport width in pixels (default: 1400)                    |
+| --height, -h    | Viewport height in pixels (default: 800)                    |
+| --delay, -d     | Delay between scroll events (default: 375)                  |
+| --mobile, -m    | Mobile emulation mode                                       |
+| --browser, -b   | Run headed (opens Chromium while running)                   |
+| --extension, -e | File extension to use (default: png) - png, jpg, jpeg, webp |
+| --quality, -q   | Quality of screenshot image: 1-100 (png is always 100)      |
+| --help          | Print this usage guide                                      |
 
-For example:
+### Examples:
 
 ```bash
 npm run start -m -u stripe.com -o screens -e jpg -q 80
@@ -60,5 +60,7 @@ npm run start -u nytimes.com -o screens
 # or
 yarn start -u nytimes.com -o screens
 ```
+
+### Screenshot Example:
 
 ![nytimes_com](https://user-images.githubusercontent.com/490988/227745739-626f2413-3315-4c06-a1b5-8c2779c8347f.jpg)

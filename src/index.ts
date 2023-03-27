@@ -17,7 +17,7 @@ interface Args {
   output?: string;
   quality?: number;
   single?: boolean;
-  urls?: string;
+  urls?: string[];
   width?: number;
 }
 
@@ -33,7 +33,7 @@ const optionDefinitions: OptionDefinition[] = [
   { name: 'output', alias: 'o', type: String, defaultValue: 'screenshots' },
   { name: 'quality', alias: 'q', type: Number },
   { name: 'single', alias: 's', type: Boolean, defaultValue: false },
-  { name: 'urls', alias: 'u', type: String },
+  { name: 'urls', alias: 'u', type: String, multiple: true },
   { name: 'width', alias: 'w', type: Number, defaultValue: 1400 },
 ];
 
@@ -49,7 +49,7 @@ const output: string = args.output ?? 'screenshots';
 const delay: number = args.delay ?? 375;
 const extension: AllowedExtensions = args.extension;
 const quality: number = args.quality;
-const cliUrls: string[] = args.urls?.split(',') ?? [];
+const cliUrls: string[] = args.urls ?? [];
 
 const urls: string[] = cliUrls.length
   ? cliUrls.map((u) => u)

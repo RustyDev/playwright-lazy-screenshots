@@ -1,7 +1,7 @@
 {
   "name": "playwright-screenshots",
   "version": "1.0.0",
-  "description": "",
+  "description": "A bulk screenshot tool that automates the capture of one or multiple URLs and saves them to a specified directory. It can take full-page screenshots or screenshots of a single viewport, accounts for lazy loaded images and content.",
   "main": "index.ts",
   "scripts": {
     "build": "tsc",
