@@ -39,8 +39,6 @@ const optionDefinitions: OptionDefinition[] = [
 
 const args: Args = commandLineArgs(optionDefinitions);
 
-console.log(args);
-
 const width: number = args.width ?? 1400;
 const height: number = args.height ?? 800;
 const mobile: boolean = args.mobile ? true : false;
@@ -63,6 +61,18 @@ const urls: string[] = cliUrls.length
 if (!fs.existsSync(output)) {
   fs.mkdirSync(output);
 }
+
+// console.table({
+//   Urls: urls.join(', '),
+//   Extension: extension,
+//   Mobile: mobile,
+//   Width: width,
+//   Height: height,
+//   Headless: headless,
+//   Delay: delay,
+//   Quality: quality ? quality : 100,
+//   Output: output,
+// });
 
 const totalScreenshots = urls.length;
 
