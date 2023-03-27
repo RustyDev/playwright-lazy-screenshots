@@ -3,14 +3,14 @@ import commandLineUsage from 'command-line-usage';
 import commandLineArgs, { OptionDefinition } from 'command-line-args';
 import * as path from 'path';
 import * as progress from 'cli-progress';
-import { Browser, chromium, devices, Locator, Page } from 'playwright';
+import { Browser, chromium, devices, Page } from 'playwright';
 import { scrollPageToBottom, scrollPageToTop } from './pageScroll';
 
 interface Args {
   delay?: number;
   depth?: number;
   extension?: AllowedExtensions;
-  browser?: boolean;
+  headless?: boolean;
   help?: boolean;
   height?: number;
   mobile?: boolean;
@@ -24,32 +24,32 @@ interface Args {
 type AllowedExtensions = 'png' | 'jpg' | 'jpeg' | 'webp';
 
 const optionDefinitions: OptionDefinition[] = [
-  { name: 'delay', alias: 'd', type: Number, defaultValue: 250 },
+  { name: 'delay', alias: 'd', type: Number, defaultValue: 300 },
+  { name: 'headless', alias: 'h', type: Boolean, defaultValue: false },
   { name: 'extension', alias: 'e', type: String, defaultValue: 'png' },
-  { name: 'browser', alias: 'b', type: Boolean, defaultValue: true },
-  { name: 'height', alias: 'h', type: Number, defaultValue: 800 },
+  { name: 'height', alias: 'y', type: Number, defaultValue: 800 },
   { name: 'help', type: Boolean },
   { name: 'mobile', alias: 'm', type: Boolean, defaultValue: false },
   { name: 'output', alias: 'o', type: String, defaultValue: 'screenshots' },
   { name: 'quality', alias: 'q', type: Number },
   { name: 'single', alias: 's', type: Boolean, defaultValue: false },
-  { name: 'urls', alias: 'u', type: String, multiple: true },
-  { name: 'width', alias: 'w', type: Number, defaultValue: 1400 },
+  { name: 'urls', alias: 'u', type: String, multiple: true, defaultValue: [] },
+  { name: 'width', alias: 'x', type: Number, defaultValue: 1400 },
 ];
 
 const args: Args = commandLineArgs(optionDefinitions);
 
-const width: number = args.width ?? 1400;
-const height: number = args.height ?? 800;
-const mobile: boolean = args.mobile ? true : false;
-const headless: boolean = args.browser ? args.browser : true;
+const width: number = args.width;
+const height: number = args.height;
+const mobile: boolean = args.mobile;
+const headless: boolean = args.headless ? false : true;
 const viewport = [width, height];
-const disableScrolling: boolean = args.single ?? false;
-const output: string = args.output ?? 'screenshots';
-const delay: number = args.delay ?? 375;
+const disableScrolling: boolean = args.single;
+const output: string = args.output;
+const delay: number = args.delay;
 const extension: AllowedExtensions = args.extension;
 const quality: number = args.quality;
-const cliUrls: string[] = args.urls ?? [];
+const cliUrls: string[] = args.urls;
 
 const urls: string[] = cliUrls.length
   ? cliUrls.map((u) => u)
@@ -78,30 +78,13 @@ const totalScreenshots = urls.length;
 
 const progressBar = new progress.SingleBar(
   {
-    format: '{bar} {percentage}% | {value}/{total} | {url}',
     barCompleteChar: '\u2588',
     barIncompleteChar: '\u2591',
+    format: '{bar} {percentage}% | {value}/{total} | {url}',
     hideCursor: false,
   },
   progress.Presets.shades_classic,
 );
-
-type WaitForRes = [locatorIndex: number, locator: Locator];
-
-export async function waitForOneOf(locators: Locator[]): Promise<WaitForRes> {
-  const res = await Promise.race([
-    ...locators.map(async (locator, index): Promise<WaitForRes> => {
-      let timedOut = false;
-      await locator.waitFor({ state: 'visible' }).catch(() => (timedOut = true));
-      return [timedOut ? -1 : index, locator];
-    }),
-  ]);
-  if (res[0] === -1) {
-    throw new Error('no locator visible before timeout');
-  }
-  return res;
-}
-
 export async function takeScreenshot(
   page: Page,
   url: string,
@@ -133,7 +116,7 @@ export async function navigateToUrl(page: Page, url: string) {
 }
 
 export async function pressEscapeKey(page: Page) {
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(1000);
   await page.keyboard.down('Escape');
 }
 
@@ -144,10 +127,10 @@ export async function scrollPage(page: Page, viewport: number[], delay: number, 
       delay,
     });
     // scroll to top to capture fixed navs
-    await page.waitForTimeout(250);
+    await page.waitForTimeout(50);
     await scrollPageToTop(page, {
       size: viewport[1],
-      delay,
+      delay: 50,
     });
     await page.waitForTimeout(500);
   }
@@ -163,15 +146,24 @@ export async function saveScreenshot(
 ) {
   const { hostname, pathname } = new URL(url);
   const imageName = `${hostname}${pathname}`.replace(/[^a-zA-Z0-9]/g, '_');
-  const mobileFlag = mobile ? '_mobile' : '';
-  const screenshotPath: string = path.join(dir, `${imageName}${mobileFlag}.${extension}`);
+  const sizeFlag = mobile ? '_mobile' : '_desktop';
+  const screenshotPath: string = path.join(dir, `${imageName}${sizeFlag}.${extension}`);
 
   await page.screenshot({
     path: screenshotPath,
+    animations: 'disabled',
     fullPage,
     ...(quality ? { quality } : {}),
   });
 }
+
+const buildValidFilename = (url: string) => {
+  let urlWithProtocol = url;
+  if (!urlWithProtocol.match(/^[a-zA-Z]+:\/\//)) {
+    urlWithProtocol = `https://${urlWithProtocol}`;
+  }
+  return urlWithProtocol;
+};
 
 (async () => {
   const browser: Browser = await chromium.launch({
@@ -180,36 +172,25 @@ export async function saveScreenshot(
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--lang=en-US,en;q=0.9'],
   });
 
-  const context = await browser.newContext({
-    ...(mobile ? devices['iPhone 13'] : {}),
-  });
-
   try {
+    const context = await browser.newContext({
+      ...(mobile ? devices['iPhone 13'] : {}),
+    });
     progressBar.start(totalScreenshots, 0);
 
     for (let i = 0; i < totalScreenshots; i++) {
       const currentUrl = urls[i];
-
       const page = context ? await context.newPage() : await browser.newPage();
-
-      let urlWithProtocol = currentUrl;
-
-      if (!urlWithProtocol.match(/^[a-zA-Z]+:\/\//)) {
-        urlWithProtocol = `https://${urlWithProtocol}`;
-      }
-
+      const urlWithProtocol = buildValidFilename(currentUrl);
       progressBar.update(i + 1, { url: currentUrl });
-
       await takeScreenshot(page, urlWithProtocol, output, disableScrolling, viewport, delay, extension);
-
       await page.close();
     }
-    progressBar.stop();
 
+    progressBar.stop();
     console.log(`Done! Saved ${totalScreenshots} screenshots to ${output}`);
   } catch (error) {
     console.error(error);
-
     process.exit(1);
   } finally {
     await browser.close();
@@ -237,15 +218,15 @@ const sections = [
       },
       { name: 'single, s', typeLabel: '{underline boolean}', description: 'Screenshot only the first viewport' },
 
-      { name: 'width, w', typeLabel: '{underline number}', description: 'Viewport width in pixels (default: 1400)' },
-      { name: 'height, h', typeLabel: '{underline number}', description: 'Viewport height in pixels (default: 800)' },
-      { name: 'delay, d', typeLabel: '{underline number}', description: 'Delay between scroll events (default: 375)' },
+      { name: 'width, x', typeLabel: '{underline number}', description: 'Viewport width in pixels (default: 1400)' },
+      { name: 'height, y', typeLabel: '{underline number}', description: 'Viewport height in pixels (default: 800)' },
+      { name: 'delay, d', typeLabel: '{underline number}', description: 'Delay between scroll events (default: 100)' },
 
       { name: 'mobile, m', typeLabel: '{underline boolean}', description: 'Mobile emulation mode' },
       {
-        name: 'browser, b',
+        name: 'headless, h',
         typeLabel: '{underline boolean}',
-        description: 'Run headed (opens Chromium while running)',
+        description: 'Open browser in headless mode (default: true)',
       },
 
       {
