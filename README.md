@@ -31,16 +31,21 @@ yarn start [options]
 
 where `[options]` are the command line options you can pass to the script:
 
-- `-vw <width>`: set the viewport width (default: 1400)
-- `-vh <height>`: set the viewport width (default: 800)
-- `-u <urls>`: urls to screenshot, separated by a comma - google.com,yahoo.com (default: urls.txt)
-- `-h <headless>`: set to run headed Chrome (default: false)
-- `-s <single>`: disable scrolling to take a full-page screenshot (default: false)
-- `-m <mobile>`: take screenshots with iPhone 13 dimensions (default: false)
-- `-o <output>`: set the output directory for the screenshots (default: "screenshots")
-- `-d <delay>`: set the delay between each scroll event in milliseconds to trigger lazy loaded content (default: 375)
-- `-e <extension>`: set the file extension for the screenshots - `jpg` | `png` | `jpeg` (default: "png")
-- `-q <quality>`: set the quality for the screenshots (except png) - 1 to 100 (default: 100)
+Options
+
+```
+--urls, u file List of urls: google.com,yahoo.com (overrides urls.txt)
+--output, o directory Output directory (default: screenshots)
+--single, s boolean Screenshot only the first viewport
+--width, w number Viewport width in pixels (default: 1400)
+--height, h number Viewport height in pixels (default: 800)
+--delay, d number Delay between scroll events (default: 375)
+--mobile, m boolean Mobile emulation mode
+--browser, b boolean Run headed (opens Chromium while running)
+--extension, e string File extension to use (default: png) - png, jpg, jpeg, webp
+--quality, q number Quality of screenshot image: 1-100 (png is always 100).
+--help string Print this usage guide.
+```
 
 For example:
 

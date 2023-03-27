@@ -1,54 +1,55 @@
 import * as fs from 'fs';
-import * as minimist from 'minimist';
+import commandLineUsage from 'command-line-usage';
+import commandLineArgs, { OptionDefinition } from 'command-line-args';
 import * as path from 'path';
 import * as progress from 'cli-progress';
 import { Browser, chromium, devices, Locator, Page } from 'playwright';
 import { scrollPageToBottom, scrollPageToTop } from './pageScroll';
 
 interface Args {
-  d?: number;
-  e?: AllowedExtensions;
-  u?: string;
-  h?: boolean;
-  m?: boolean;
-  o?: string;
-  q?: number;
-  s?: boolean;
-  vh?: number;
-  vw?: number;
+  delay?: number;
+  depth?: number;
+  extension?: AllowedExtensions;
+  browser?: boolean;
+  help?: boolean;
+  height?: number;
+  mobile?: boolean;
+  output?: string;
+  quality?: number;
+  single?: boolean;
+  urls?: string;
+  width?: number;
 }
 
 type AllowedExtensions = 'png' | 'jpg' | 'jpeg' | 'webp';
 
-const args: Args = minimist(process.argv.slice(2), {
-  alias: {
-    d: 'delay',
-    e: 'extension',
-    u: 'urls',
-    h: 'headless',
-    m: 'mobile',
-    o: 'output',
-    q: 'quality',
-    s: 'disableScrolling',
-    vh: 'viewportHeight',
-    vw: 'viewportWidth',
-  },
-  string: ['urls', 'output', 'extension'],
-  boolean: ['headless', 'disableScrolling', 'mobile'],
-  number: ['delay', 'quality', 'viewportHeight', 'viewportWidth'],
-});
+const optionDefinitions: OptionDefinition[] = [
+  { name: 'delay', alias: 'd', type: Number, defaultValue: 250 },
+  { name: 'extension', alias: 'e', type: String, defaultValue: 'png' },
+  { name: 'browser', alias: 'b', type: Boolean, defaultValue: true },
+  { name: 'height', alias: 'h', type: Number, defaultValue: 800 },
+  { name: 'help', type: Boolean },
+  { name: 'mobile', alias: 'm', type: Boolean, defaultValue: false },
+  { name: 'output', alias: 'o', type: String, defaultValue: 'screenshots' },
+  { name: 'quality', alias: 'q', type: Number },
+  { name: 'single', alias: 's', type: Boolean, defaultValue: false },
+  { name: 'urls', alias: 'u', type: String },
+  { name: 'width', alias: 'w', type: Number, defaultValue: 1400 },
+];
 
-const width: number = args.vw ?? 1400;
-const height: number = args.vh ?? 800;
-const mobile: boolean = args.m ? true : false;
-const headless: boolean = args.h ? false : true;
+const args: Args = commandLineArgs(optionDefinitions);
+
+const width: number = args.width ?? 1400;
+const height: number = args.height ?? 800;
+const mobile: boolean = args.mobile ? true : false;
+const headless: boolean = args.browser ? args.browser : true;
 const viewport = [width, height];
-const disableScrolling: boolean = args.s ?? false;
-const dir: string = args.o ?? 'screenshots';
-const delay: number = args.d ?? 375;
-const extension: AllowedExtensions = args.e ?? 'png';
-const quality: number = args.q;
-const cliUrls: string[] = args.u?.split(',') ?? [];
+const disableScrolling: boolean = args.single ?? false;
+const output: string = args.output ?? 'screenshots';
+const delay: number = args.delay ?? 375;
+const extension: AllowedExtensions = args.extension;
+const quality: number = args.quality;
+const cliUrls: string[] = args.urls?.split(',') ?? [];
 
 const urls: string[] = cliUrls.length
   ? cliUrls.map((u) => u)
@@ -57,8 +58,8 @@ const urls: string[] = cliUrls.length
       .split('\n')
       .filter((url: string) => url.trim() !== '');
 
-if (!fs.existsSync(dir)) {
-  fs.mkdirSync(dir);
+if (!fs.existsSync(output)) {
+  fs.mkdirSync(output);
 }
 
 const totalScreenshots = urls.length;
@@ -157,8 +158,6 @@ export async function saveScreenshot(
 }
 
 (async () => {
-  // if (process.env.NODE_ENV === 'TEST') return;
-
   const browser: Browser = await chromium.launch({
     headless,
     devtools: false,
@@ -166,30 +165,30 @@ export async function saveScreenshot(
   });
 
   const context = await browser.newContext({
-    ...(mobile ? devices['iPhone 12'] : {}),
+    ...(mobile ? devices['iPhone 13'] : {}),
   });
 
   try {
     progressBar.start(totalScreenshots, 0);
 
     for (let i = 0; i < totalScreenshots; i++) {
-      const url = urls[i];
+      const currentUrl = urls[i];
 
       const page = context ? await context.newPage() : await browser.newPage();
 
-      let urlWithProtocol = url;
+      let urlWithProtocol = currentUrl;
 
       if (!urlWithProtocol.match(/^[a-zA-Z]+:\/\//)) {
         urlWithProtocol = `https://${urlWithProtocol}`;
       }
 
-      progressBar.update(i + 1, { url });
-      await takeScreenshot(page, urlWithProtocol, dir, disableScrolling, viewport, delay, extension);
+      progressBar.update(i + 1, { url: currentUrl });
+      await takeScreenshot(page, urlWithProtocol, output, disableScrolling, viewport, delay, extension);
 
       await page.close();
     }
     progressBar.stop();
-    console.log(`Done! Saved ${totalScreenshots} screenshots to ${dir}`);
+    console.log(`Done! Saved ${totalScreenshots} screenshots to ${output}`);
   } catch (error) {
     console.error(error);
     process.exit(1);
@@ -197,3 +196,60 @@ export async function saveScreenshot(
     await browser.close();
   }
 })();
+
+const sections = [
+  {
+    header: 'Playwright Bulk Screenshots w/ Lazy Loading',
+    content:
+      'This Node.js application captures screenshots of a list of URLs and saves them to a specified directory. It can take full-page screenshots or screenshots of a single viewport, and uses the `playwright` to automate the process.',
+  },
+  {
+    header: 'Options',
+    optionList: [
+      {
+        name: 'urls, u',
+        typeLabel: '{underline file}',
+        description: 'List of urls: google.com,yahoo.com (overrides urls.txt)',
+      },
+      {
+        name: 'output, o',
+        typeLabel: '{underline directory}',
+        description: 'Output directory (default: screenshots)',
+      },
+      { name: 'single, s', typeLabel: '{underline boolean}', description: 'Screenshot only the first viewport' },
+
+      { name: 'width, w', typeLabel: '{underline number}', description: 'Viewport width in pixels (default: 1400)' },
+      { name: 'height, h', typeLabel: '{underline number}', description: 'Viewport height in pixels (default: 800)' },
+      { name: 'delay, d', typeLabel: '{underline number}', description: 'Delay between scroll events (default: 375)' },
+
+      { name: 'mobile, m', typeLabel: '{underline boolean}', description: 'Mobile emulation mode' },
+      {
+        name: 'browser, b',
+        typeLabel: '{underline boolean}',
+        description: 'Run headed (opens Chromium while running)',
+      },
+
+      {
+        name: 'extension, e',
+        typeLabel: '{underline string}',
+        description: 'File extension to use (default: png) - png, jpg, jpeg, webp',
+      },
+      {
+        name: 'quality, q',
+        typeLabel: '{underline number}',
+        description: 'Quality of screenshot image: 1-100 (png is always 100).',
+      },
+
+      {
+        name: 'help',
+        description: 'Print this usage guide.',
+      },
+    ],
+  },
+];
+const usage = commandLineUsage(sections);
+
+if (args.help) {
+  console.log(usage);
+  process.exit(0);
+}

@@ -1,3 +1,8 @@
+/*
+Credit to https://github.com/mbalabash/puppeteer-autoscroll-down
+Refactored to work with Playwright
+*/
+
 function scrollPage(scrollDirection) {
   return async (page, { size = 250, delay = 100, stepsLimit = null } = {}) => {
     const lastScrollPosition = await page.evaluate(
@@ -41,7 +46,7 @@ function scrollPage(scrollDirection) {
   };
 }
 
-module.exports = {
-  scrollPageToBottom: scrollPage('bottom'),
-  scrollPageToTop: scrollPage('top'),
-};
+const scrollPageToBottom = scrollPage('bottom');
+const scrollPageToTop = scrollPage('top');
+
+export { scrollPageToBottom, scrollPageToTop };
