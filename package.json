@@ -7,7 +7,7 @@
     "build": "tsc",
     "format": "eslint src/**/*.ts --fix",
     "lint": "eslint src/**/*.ts",
-    "run": "ts-node src/index.ts",
+    "show:help": "ts-node src/index.ts --help",
     "start": "ts-node src/index.ts",
     "start:watch": "npx nodemon src/index.ts --",
     "test": "npx playwright test",

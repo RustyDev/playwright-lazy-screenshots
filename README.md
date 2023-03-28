@@ -46,9 +46,10 @@ where `[options]` are the command line options you can pass to the script:
 ### Examples:
 
 ```bash
-yarn start --help
+yarn show:help
 yarn start -m -u slack.com -o screens -e jpg -q 80 -x 1024 -y 768 -d 100
-yarn start --mobile --urls slack.com --output screens --ext jpg --quality 80 --width 1024 --height 768 --delay 100
+yarn start --mobile --urls slack.com --output screens --ext jpg --quality 80
+yarn start --urls slack.com stripe.com  --width 1024 --height 768 --single
 yarn start -msu slack.com
 ```
 
