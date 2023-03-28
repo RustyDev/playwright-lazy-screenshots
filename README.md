@@ -7,8 +7,6 @@ A bulk screenshot tool that automates the capture of one or multiple URLs and sa
 To install the dependencies, run the following command in the terminal:
 
 ```bash
-npm install
-# or
 yarn
 ```
 
@@ -24,8 +22,6 @@ google.com
 Then run the following command in the terminal:
 
 ```bash
-npm run start [options]
-# or
 yarn start [options]
 ```
 
@@ -33,32 +29,39 @@ where `[options]` are the command line options you can pass to the script:
 
 ## Options
 
-| Command         | Description                                                 |
-| --------------- | ----------------------------------------------------------- |
-| --urls, -u      | List of urls: google.com yahoo.com (overrides urls.txt)     |
-| --output, -o    | Output directory (default: screenshots)                     |
-| --single, -s    | Screenshot only the first viewport                          |
-| --width, -w     | Viewport width in pixels (default: 1400)                    |
-| --height, -h    | Viewport height in pixels (default: 800)                    |
-| --delay, -d     | Delay between scroll events (default: 375)                  |
-| --mobile, -m    | Mobile emulation mode                                       |
-| --browser, -b   | Run headed (opens Chromium while running)                   |
-| --extension, -e | File extension to use (default: png) - png, jpg, jpeg, webp |
-| --quality, -q   | Quality of screenshot image: 1-100 (png is always 100)      |
-| --help          | Print this usage guide                                      |
+| Command       | Description                                                 |
+| ------------- | ----------------------------------------------------------- |
+| --urls, -u    | List of urls: google.com yahoo.com (overrides urls.txt)     |
+| --output, -o  | Output directory (default: screenshots)                     |
+| --single, -s  | Screenshot only the first viewport                          |
+| --width, -x   | Viewport width in pixels (default: 1400)                    |
+| --height, -y  | Viewport height in pixels (default: 800)                    |
+| --delay, -d   | Delay between scroll events (default: 375)                  |
+| --mobile, -m  | Mobile emulation mode                                       |
+| --headed, -h  | Run headed (opens Chromium while running)                   |
+| --ext, -e     | File extension to use (default: png) - png, jpg, jpeg, webp |
+| --quality, -q | Quality of screenshot image: 1-100 (png is always 100)      |
+| --help        | Print this usage guide                                      |
 
 ### Examples:
 
 ```bash
-npm run start -m -u stripe.com -o screens -e jpg -q 80
-# or
-yarn start -m -u stripe.com -o screens -e jpg -q 80
+yarn start --help
+yarn start -m -u slack.com -o screens -e jpg -q 80 -x 1024 -y 768 -d 100
+yarn start --mobile --urls slack.com --output screens --ext jpg --quality 80 --width 1024 --height 768 --delay 100
+yarn start -msu slack.com
 ```
 
 ```bash
-npm run start -u nytimes.com -o screens
-# or
 yarn start -u nytimes.com -o screens
+```
+
+### Run Tests
+
+```bash
+npx playwright test
+# or
+npx playwright test --ui
 ```
 
 ### Screenshot Example:

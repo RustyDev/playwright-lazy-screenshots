@@ -9,8 +9,8 @@ import { scrollPageToBottom, scrollPageToTop } from './pageScroll';
 interface Args {
   delay?: number;
   depth?: number;
-  extension?: AllowedExtensions;
-  headless?: boolean;
+  ext?: AllowedExtensions;
+  headed?: boolean;
   help?: boolean;
   height?: number;
   mobile?: boolean;
@@ -25,8 +25,8 @@ type AllowedExtensions = 'png' | 'jpg' | 'jpeg' | 'webp';
 
 const optionDefinitions: OptionDefinition[] = [
   { name: 'delay', alias: 'd', type: Number, defaultValue: 300 },
-  { name: 'headless', alias: 'h', type: Boolean, defaultValue: false },
-  { name: 'extension', alias: 'e', type: String, defaultValue: 'png' },
+  { name: 'headed', alias: 'h', type: Boolean, defaultValue: false },
+  { name: 'ext', alias: 'e', type: String, defaultValue: 'png' },
   { name: 'height', alias: 'y', type: Number, defaultValue: 800 },
   { name: 'help', type: Boolean },
   { name: 'mobile', alias: 'm', type: Boolean, defaultValue: false },
@@ -42,12 +42,12 @@ const args: Args = commandLineArgs(optionDefinitions);
 const width: number = args.width;
 const height: number = args.height;
 const mobile: boolean = args.mobile;
-const headless: boolean = args.headless ? false : true;
+const headed: boolean = args.headed ? false : true;
 const viewport = [width, height];
-const disableScrolling: boolean = args.single;
+const single: boolean = args.single;
 const output: string = args.output;
 const delay: number = args.delay;
-const extension: AllowedExtensions = args.extension;
+const ext: AllowedExtensions = args.ext;
 const quality: number = args.quality;
 const cliUrls: string[] = args.urls;
 
@@ -61,18 +61,6 @@ const urls: string[] = cliUrls.length
 if (!fs.existsSync(output)) {
   fs.mkdirSync(output);
 }
-
-// console.table({
-//   Urls: urls.join(', '),
-//   Extension: extension,
-//   Mobile: mobile,
-//   Width: width,
-//   Height: height,
-//   Headless: headless,
-//   Delay: delay,
-//   Quality: quality ? quality : 100,
-//   Output: output,
-// });
 
 const totalScreenshots = urls.length;
 
@@ -89,18 +77,18 @@ export async function takeScreenshot(
   page: Page,
   url: string,
   dir: string,
-  disableScrolling: boolean,
+  single: boolean,
   viewport: number[],
   delay: number,
-  extension: AllowedExtensions,
+  ext: AllowedExtensions,
 ) {
   if (!mobile) {
     await setViewportSize(page, viewport);
   }
   await navigateToUrl(page, url);
   await pressEscapeKey(page);
-  await scrollPage(page, viewport, delay, disableScrolling);
-  await saveScreenshot(page, dir, url, extension, !disableScrolling, quality);
+  await scrollPage(page, viewport, delay, single);
+  await saveScreenshot(page, dir, url, ext, !single, quality);
 }
 
 export async function setViewportSize(page: Page, viewport: number[]) {
@@ -112,7 +100,7 @@ export async function setViewportSize(page: Page, viewport: number[]) {
 
 export async function navigateToUrl(page: Page, url: string) {
   await page.goto(url);
-  await page.waitForLoadState('domcontentloaded');
+  await page.waitForLoadState('load');
 }
 
 export async function pressEscapeKey(page: Page) {
@@ -120,14 +108,14 @@ export async function pressEscapeKey(page: Page) {
   await page.keyboard.down('Escape');
 }
 
-export async function scrollPage(page: Page, viewport: number[], delay: number, disableScrolling: boolean) {
-  if (!disableScrolling) {
+export async function scrollPage(page: Page, viewport: number[], delay: number, single: boolean) {
+  if (!single) {
     await scrollPageToBottom(page, {
       size: viewport[1],
       delay,
     });
-    // scroll to top to capture fixed navs
     await page.waitForTimeout(50);
+    // scroll to top to capture fixed navs
     await scrollPageToTop(page, {
       size: viewport[1],
       delay: 50,
@@ -140,14 +128,14 @@ export async function saveScreenshot(
   page: Page,
   dir: string,
   url: string,
-  extension: AllowedExtensions,
+  ext: AllowedExtensions,
   fullPage: boolean,
   quality: number = null,
 ) {
   const { hostname, pathname } = new URL(url);
   const imageName = `${hostname}${pathname}`.replace(/[^a-zA-Z0-9]/g, '_');
   const sizeFlag = mobile ? '_mobile' : '_desktop';
-  const screenshotPath: string = path.join(dir, `${imageName}${sizeFlag}.${extension}`);
+  const screenshotPath: string = path.join(dir, `${imageName}${sizeFlag}.${ext}`);
 
   await page.screenshot({
     path: screenshotPath,
@@ -167,7 +155,7 @@ const buildValidFilename = (url: string) => {
 
 (async () => {
   const browser: Browser = await chromium.launch({
-    headless,
+    headless: headed,
     devtools: false,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--lang=en-US,en;q=0.9'],
   });
@@ -183,7 +171,7 @@ const buildValidFilename = (url: string) => {
       const page = context ? await context.newPage() : await browser.newPage();
       const urlWithProtocol = buildValidFilename(currentUrl);
       progressBar.update(i + 1, { url: currentUrl });
-      await takeScreenshot(page, urlWithProtocol, output, disableScrolling, viewport, delay, extension);
+      await takeScreenshot(page, urlWithProtocol, output, single, viewport, delay, ext);
       await page.close();
     }
 
@@ -201,7 +189,7 @@ const sections = [
   {
     header: 'Playwright Bulk Screenshots w/ Lazy Loading',
     content:
-      'This Node.js application captures screenshots of a list of URLs and saves them to a specified directory. It can take full-page screenshots or screenshots of a single viewport, and uses the `playwright` to automate the process.',
+      'A bulk screenshot tool that automates the capture of one or multiple URLs and saves them to a specified directory. It can take full-page screenshots or screenshots of a single viewport, accounts for lazy loaded images and content.',
   },
   {
     header: 'Options',
@@ -224,13 +212,13 @@ const sections = [
 
       { name: 'mobile, m', typeLabel: '{underline boolean}', description: 'Mobile emulation mode' },
       {
-        name: 'headless, h',
+        name: 'headed, h',
         typeLabel: '{underline boolean}',
-        description: 'Open browser in headless mode (default: true)',
+        description: 'Headed mode opens Chromium (default: false)',
       },
 
       {
-        name: 'extension, e',
+        name: 'ext, e',
         typeLabel: '{underline string}',
         description: 'File extension to use (default: png) - png, jpg, jpeg, webp',
       },

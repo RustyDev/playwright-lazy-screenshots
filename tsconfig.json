@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2019",
+    "target": "es2022",
     "module": "CommonJS",
     "moduleResolution": "Node",
     "esModuleInterop": true,
@@ -8,6 +8,6 @@
     "sourceMap": true,
     "baseUrl": "."
   },
-  "include": ["src/**/*.ts", "src/pageScroll.ts", "tests/index.spec.ts"],
+  "include": ["src/**/*.ts", "tests/*.spec.ts"],
   "exclude": ["node_modules"]
 }
